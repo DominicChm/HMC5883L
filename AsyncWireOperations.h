@@ -1,10 +1,12 @@
 
-#ifndef STEPPERTEST_ASYNCWIREOPERATIONS_H
-#define STEPPERTEST_ASYNCWIREOPERATIONS_H
+#ifndef ASYNCWIREOPERATIONS_H
+#define ASYNCWIREOPERATIONS_H
 
 #include <Arduino.h>
 #include <Wire.h>
 
+// Class to help with I2C operations. Supports both synchronous and
+// asynchronous operation.
 class AsyncWire {
 private:
     TwoWire *wire;
@@ -29,6 +31,7 @@ public:
         this->targetAddress = targetAddress;
     }
 
+	// Read a single byte from the passed register. Blocking.
     uint8_t readSync8(uint8_t reg) {
         setRegisterPointer(reg);
 
@@ -44,6 +47,11 @@ public:
         return value;
     }
 
+	// Read a single byte from the passed register. Non-blocking.
+	// Returns whether the read was sucessfully started.
+	// Will read length into the passed buffer, setting *finishFlag to
+	// finishValue once completed. Designed to allow interoperation 
+	// with an FSM. (IE *finishFlag is state, finishValue is next state) 
     bool readAsync(uint8_t buffer[], size_t length, int *finishFlag, int finishValue) {
         if (state != STATE_IDLE) return false;
 
@@ -62,6 +70,7 @@ public:
         return true;
     }
 
+	// Reads a buffer without setting the pointer. Blocking.
     bool readSync(uint8_t *buffer, size_t length) {
         if (state != STATE_IDLE) return false;
         wire->beginTransmission(targetAddress);
@@ -73,6 +82,7 @@ public:
         return true;
     }
 
+	// Reads a buffer after setting the pointer. Blocking.
     bool readRegSync(uint8_t reg, uint8_t *buffer, size_t length) {
         if (state != STATE_IDLE) return false;
         setRegisterPointer(reg);
@@ -85,7 +95,7 @@ public:
         return true;
     }
 
-
+	// The async FSM.
     void loop() {
         switch (state) {
             case STATE_IDLE:
@@ -126,4 +136,4 @@ public:
     }
 };
 
-#endif //STEPPERTEST_ASYNCWIREOPERATIONS_H
+#endif
